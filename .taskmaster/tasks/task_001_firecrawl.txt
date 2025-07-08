@@ -1,0 +1,18 @@
+# Task ID: 1
+# Title: Set up project foundation with Streamlit interface and Firecrawl dependencies
+# Status: pending
+# Dependencies: None
+# Priority: high
+# Description: Establish the initial project structure, create a basic Streamlit interface with a URL input field, and configure requirements.txt for Firecrawl integration.
+# Details:
+1. Create the following directory structure at the project root: 'streamlit-app/', 'data/', and 'config/'.
+2. Inside 'streamlit-app/', create an 'app.py' file that initializes a basic Streamlit application. Use 'import streamlit as st' and add a title and a text input field for URL entry using 'st.text_input("Enter URL")'.
+3. Optionally, use 'st.form' for batching input if you plan to expand the form later, as per Streamlit best practices[4].
+4. In the project root, create a 'requirements.txt' file listing all necessary dependencies, including 'streamlit' and any packages required for Firecrawl integration (e.g., 'firecrawl', 'requests', etc.).
+5. Ensure all files are placed in their respective directories and that the structure is clean and ready for further development.
+
+# Test Strategy:
+- Verify that the directory structure ('streamlit-app/', 'data/', 'config/') exists and contains the correct files.
+- Run 'streamlit run streamlit-app/app.py' and confirm that the app launches with a visible title and a URL input field.
+- Enter a URL in the input field and ensure the value is captured (e.g., print or display it on the page).
+- Check that 'requirements.txt' includes all necessary dependencies and that running 'pip install -r requirements.txt' completes without errors.

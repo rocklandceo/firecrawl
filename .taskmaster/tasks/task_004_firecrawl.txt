@@ -1,0 +1,11 @@
+# Task ID: 4
+# Title: Implement file management system with domain-based organization and ZIP export
+# Status: pending
+# Dependencies: 1, 3
+# Priority: high
+# Description: Develop file_manager.py to organize files into domain-based folders, apply timestamped naming, detect duplicates, and support ZIP export for structured content storage.
+# Details:
+Create a Python module named file_manager.py that provides a FileManager class or set of functions for managing content files. Implement logic to organize files into folders based on their domain (e.g., example.com/...), using os or pathlib for directory and file operations. When saving files, append a timestamp to filenames to ensure uniqueness and facilitate versioning. Implement duplicate detection by checking for existing files with the same content hash or name within the target directory. Provide methods to export selected or all organized files as a ZIP archive, preserving the folder structure. Ensure compatibility with the output of the content processing module (data_processor.py). Use pathlib for modern, maintainable code and consider edge cases such as invalid filenames, deeply nested domains, and large file sets. Include docstrings and type hints for clarity.
+
+# Test Strategy:
+Write unit tests to verify: (1) correct creation of domain-based folders and file placement; (2) timestamped naming and uniqueness of saved files; (3) accurate detection and handling of duplicate files; (4) successful ZIP export with preserved folder structure and correct file contents; (5) handling of edge cases such as invalid domain names, special characters, and large numbers of files. Use temporary directories and mock data for isolation. Manually inspect exported ZIP archives for structure and content integrity.

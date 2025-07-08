@@ -1,0 +1,23 @@
+# Task ID: 5
+# Title: Implement batch processing with async operations and progress tracking
+# Status: pending
+# Dependencies: 1, 2, 4
+# Priority: medium
+# Description: Add support for processing multiple URLs in batches, enabling asynchronous scraping, progress tracking, and user feedback for efficient bulk operations.
+# Details:
+Extend the application to accept and process multiple URLs in a single batch. Design a batch processing module or class that:
+- Accepts a list of URLs (via UI or API) and initiates scraping for each using the Firecrawl client.
+- Utilizes Python's asyncio (e.g., asyncio.gather, aiohttp) or concurrent.futures for asynchronous execution, ensuring efficient parallel processing of requests[2][3].
+- Tracks the progress of each URL (e.g., pending, running, completed, failed) and aggregates overall batch status, storing job IDs or status URLs if provided by the backend[2][3].
+- Integrates with the Streamlit UI to display real-time progress bars, per-URL status, and error messages for user feedback.
+- Handles large batches by chunking requests if necessary and provides clear feedback on batch limits or errors.
+- Ensures robust error handling and retries for failed URLs, and logs results for later review.
+- Optionally, persists batch job metadata (e.g., in a JSON or database file) for audit and recovery.
+Coordinate with the Firecrawl client for actual scraping and the file management system for storing results.
+
+# Test Strategy:
+1. Write unit and integration tests to verify that multiple URLs can be submitted and processed concurrently, with correct results for each.
+2. Simulate batches with a mix of valid and invalid URLs to ensure error handling and progress tracking work as expected.
+3. Test UI feedback: confirm that progress bars and status updates reflect real-time batch progress and individual URL outcomes.
+4. Validate that results are saved using the file management system, with correct organization and no data loss.
+5. Stress-test with large batches to ensure performance and stability, and verify chunking or throttling if implemented.

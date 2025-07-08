@@ -1,0 +1,22 @@
+# Task ID: 8
+# Title: Develop Comprehensive Automated Testing Suite for Content Extraction and Processing
+# Status: pending
+# Dependencies: 2, 3, 4, 5, 6, 7
+# Priority: high
+# Description: Implement an automated testing suite that validates the full extraction and processing pipeline, including Google CodeLabs URLs, markdown output quality for AI consumption, batch processing, and JavaScript-rendered content extraction.
+# Details:
+Design and implement a robust testing suite using pytest (or a similar framework) to cover the end-to-end workflow. Key components:
+- **Primary Test URLs:** Select a representative set of Google CodeLabs and other dynamic/static URLs as fixtures. Ensure coverage of both simple and JavaScript-heavy pages.
+- **Markdown Output Validation:** After extraction and processing, compare markdown output against expected results. Validate structure, code block preservation, link formatting, and AI-readiness (e.g., readability, context retention). Use snapshot testing for markdown outputs to catch regressions.
+- **Batch Processing:** Simulate batch jobs with mixed valid/invalid URLs. Assert correct parallel execution, progress tracking, and error handling. Ensure results are aggregated and failures are reported clearly.
+- **JavaScript-rendered Content:** For dynamic sites, verify that JavaScript-executed content is fully extracted (e.g., using Puppeteer or Firecrawl's JS support). Compare extracted data to ground truth or visible page content. Include tests for timeouts and partial loads.
+- **Integration Points:** Mock or stub external dependencies (e.g., network, file system) where appropriate, but include full integration tests for critical paths.
+- **Regression and Edge Cases:** Add tests for malformed markdown, broken links, duplicate content, and large documents. Ensure the suite is easily extensible for new sites and formats.
+
+# Test Strategy:
+1. Run the suite against a curated list of Google CodeLabs and dynamic URLs, verifying extraction completeness and markdown output matches expected snapshots.
+2. For each test, assert that code blocks, links, and formatting are preserved and optimized for LLM consumption.
+3. Execute batch processing tests with mixed URL validity, confirming correct concurrency, progress updates, and error reporting.
+4. For JavaScript-rendered pages, compare extracted content to manual page inspection or known ground truth, ensuring dynamic elements are captured.
+5. Simulate edge cases (timeouts, malformed input, duplicates) and verify graceful handling and accurate reporting.
+6. Review test coverage reports to ensure all major modules and workflows are exercised.

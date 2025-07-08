@@ -1,0 +1,11 @@
+# Task ID: 9
+# Title: Enhance Streamlit UI/UX with Progress Indicators, Real-Time Status, Content Preview, and Navigation
+# Status: pending
+# Dependencies: 1, 5
+# Priority: medium
+# Description: Design and implement a professional Streamlit interface featuring progress indicators, real-time status updates, content preview, and user-friendly navigation to optimize the user experience.
+# Details:
+Redesign the Streamlit app layout for clarity and usability, leveraging Streamlit's theming and layout primitives (st.title, st.header, st.sidebar, st.columns) for clear structure and navigation[3]. Integrate progress indicators (e.g., st.progress, st.spinner) to visualize batch and individual URL processing status, updating in real time using st.session_state and event-driven callbacks[2]. Display real-time status updates for each URL, including pending, running, completed, and failed states, with clear visual cues (icons, color coding, or badges). Implement a content preview panel using st.markdown for markdown output and st.json for structured data, allowing users to inspect results before download or export[1]. Ensure navigation is intuitive by grouping controls logically (e.g., input, batch controls, results, export) and providing persistent sidebar navigation for switching between main app sections. Apply accessible theming and contrast best practices for readability and professional appearance[3].
+
+# Test Strategy:
+1. Manually test the UI by submitting single and batch URL jobs, verifying that progress indicators and real-time status updates reflect actual processing states. 2. Confirm that content previews render markdown and JSON outputs correctly for various result types. 3. Validate that navigation elements (sidebar, buttons, tabs) are intuitive and all app sections are accessible. 4. Use accessibility tools to check color contrast and text sizing. 5. Solicit user feedback on usability and iterate based on findings.

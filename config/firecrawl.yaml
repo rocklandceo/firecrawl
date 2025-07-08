@@ -1,0 +1,68 @@
+# Firecrawl Configuration
+# Configuration for Firecrawl API client and scraping options
+
+api:
+  # API URL for self-hosted Firecrawl instance
+  # Default: https://api.firecrawl.dev (cloud)
+  # For self-hosted: http://localhost:3002
+  url: "https://api.firecrawl.dev"
+  
+  # API key from environment variable
+  # Set FIRECRAWL_API_KEY in .env file
+  key_env_var: "FIRECRAWL_API_KEY"
+  
+  # Request timeout in seconds
+  timeout: 30
+
+scraping:
+  # Default output formats
+  formats:
+    - "markdown"
+    - "html"
+  
+  # JavaScript execution settings
+  javascript:
+    enabled: true
+    timeout: 10
+    wait_for: "networkidle"
+  
+  # Content extraction options
+  extraction:
+    preserve_code_blocks: true
+    clean_navigation: true
+    optimize_for_ai: true
+    include_metadata: true
+  
+  # Rate limiting
+  rate_limit:
+    requests_per_minute: 60
+    concurrent_requests: 5
+
+crawling:
+  # Default crawling options
+  max_pages: 100
+  max_depth: 3
+  
+  # URL filtering
+  include_patterns:
+    - "*.html"
+    - "*/tutorials/*"
+    - "*/codelabs/*"
+  
+  exclude_patterns:
+    - "*/admin/*"
+    - "*/login/*"
+    - "*.pdf"
+    - "*.zip"
+
+processing:
+  # Content processing pipeline
+  markdown_optimization: true
+  code_block_preservation: true
+  link_processing: true
+  ai_friendly_formatting: true
+  
+  # File organization
+  domain_based_folders: true
+  timestamp_naming: true
+  duplicate_detection: true

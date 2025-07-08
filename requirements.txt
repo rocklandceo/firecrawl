@@ -1,0 +1,46 @@
+# Firecrawl-Streamlit Web Scraper Dependencies
+# Core Framework
+streamlit>=1.28.0
+
+# Firecrawl Integration
+firecrawl-py>=1.0.0
+
+# HTTP and API Communication
+requests>=2.31.0
+
+# Data Processing and Analytics
+pandas>=2.0.0
+
+# File Management and Path Operations
+pathlib>=1.0.0
+
+# Environment and Configuration Management
+python-dotenv>=1.0.0
+
+# Data Validation and Parsing
+pydantic>=2.0.0
+
+# Markdown Processing
+markdown>=3.5.0
+python-markdown-math>=0.8
+
+# Content Processing and Text Analysis
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+
+# JSON and YAML Configuration
+PyYAML>=6.0
+
+# Hashing and Cryptography (for duplicate detection)
+# hashlib is built-in to Python
+
+# Progress Bars and User Feedback
+tqdm>=4.65.0
+
+# Testing Framework
+pytest>=7.4.0
+pytest-cov>=4.1.0
+
+# Development Tools
+black>=23.0.0
+flake8>=6.0.0

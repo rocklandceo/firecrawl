@@ -1,0 +1,415 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Set up project foundation with Streamlit interface and Firecrawl dependencies",
+        "description": "Establish the initial project structure, create a basic Streamlit interface with a URL input field, and configure requirements.txt for Firecrawl integration.",
+        "details": "1. Create the following directory structure at the project root: 'streamlit-app/', 'data/', and 'config/'.\n2. Inside 'streamlit-app/', create an 'app.py' file that initializes a basic Streamlit application. Use 'import streamlit as st' and add a title and a text input field for URL entry using 'st.text_input(\"Enter URL\")'.\n3. Optionally, use 'st.form' for batching input if you plan to expand the form later, as per Streamlit best practices[4].\n4. In the project root, create a 'requirements.txt' file listing all necessary dependencies, including 'streamlit' and any packages required for Firecrawl integration (e.g., 'firecrawl', 'requests', etc.).\n5. Ensure all files are placed in their respective directories and that the structure is clean and ready for further development.",
+        "testStrategy": "- Verify that the directory structure ('streamlit-app/', 'data/', 'config/') exists and contains the correct files.\n- Run 'streamlit run streamlit-app/app.py' and confirm that the app launches with a visible title and a URL input field.\n- Enter a URL in the input field and ensure the value is captured (e.g., print or display it on the page).\n- Check that 'requirements.txt' includes all necessary dependencies and that running 'pip install -r requirements.txt' completes without errors.",
+        "status": "pending",
+        "dependencies": [],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 2,
+        "title": "Implement Firecrawl client integration",
+        "description": "Develop firecrawl_client.py to provide an API wrapper for Firecrawl, including connection testing and configuration management for a self-hosted instance.",
+        "details": "Create a Python module named firecrawl_client.py in the appropriate directory (e.g., 'streamlit-app/' or a 'clients/' folder). Implement a FirecrawlClient class that wraps the Firecrawl Python SDK, supporting both scraping and crawling functionality. The client should:\n- Accept configuration for API key and API URL (for self-hosted instances) via environment variables, config files (e.g., config/firecrawl.yaml), or direct parameters.\n- Provide methods for scraping a single URL and crawling a website, exposing relevant options (formats, limits, etc.) as parameters.\n- Implement a connection test method that verifies API connectivity by making a lightweight request (e.g., fetching account info or a simple scrape with a known URL) and handling errors gracefully.\n- Include robust error handling for authentication, network, and API errors, returning informative messages.\n- Document usage and configuration in module docstrings.\nReference the Firecrawl Python SDK documentation for method signatures and configuration options. Ensure compatibility with self-hosted Firecrawl by allowing the API URL to be set explicitly.[1][2][3][4]",
+        "testStrategy": "- Set up environment variables and/or config files with valid and invalid API keys and API URLs.\n- Run unit tests to verify that the client can successfully connect to both the default and a self-hosted Firecrawl instance, using the connection test method.\n- Test scraping and crawling methods with valid URLs and check that the returned data matches expected formats (markdown, HTML, etc.).\n- Simulate error conditions (invalid key, unreachable API, malformed URL) and confirm that errors are handled and reported correctly.\n- Review code for clear documentation and configuration flexibility.",
+        "status": "pending",
+        "dependencies": [
+          1
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 3,
+        "title": "Develop content processing module with markdown optimization and AI-friendly formatting",
+        "description": "Create data_processor.py to optimize markdown content, preserve code blocks, process links, and format text for LLM consumption.",
+        "details": "Implement a Python module named data_processor.py that provides functions or a class for processing and optimizing markdown content. Key features should include: (1) Markdown optimization—refine document structure, enforce style consistency, and improve readability using context-aware formatting; (2) Code block preservation—detect and retain fenced code blocks (triple backticks), optionally applying language detection and syntax highlighting metadata for downstream use; (3) Link processing—identify, validate, and if necessary, rewrite or annotate internal and external links for clarity and SEO; (4) AI-friendly formatting—ensure output is structured for large language model (LLM) consumption, such as clear section headers, semantic hierarchy, and removal of extraneous markdown artifacts. Consider leveraging Python-Markdown and relevant extensions (e.g., fenced_code, syntax highlighting) for robust parsing and transformation. Provide a clear API for processing raw markdown input and returning optimized output. Include comprehensive docstrings and usage examples.",
+        "testStrategy": "Write unit tests covering: (1) preservation and correct formatting of fenced code blocks with various languages; (2) markdown structure optimization (e.g., heading normalization, list formatting); (3) correct identification and processing of links, including edge cases (broken, relative, or malformed links); (4) output formatting suitable for LLM input (e.g., no broken markdown, consistent style). Use sample markdown files with mixed content (text, code, links) as test fixtures. Verify that processed output matches expected results and that code blocks remain intact. Include tests for error handling and malformed input.",
+        "status": "pending",
+        "dependencies": [
+          1
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 4,
+        "title": "Implement file management system with domain-based organization and ZIP export",
+        "description": "Develop file_manager.py to organize files into domain-based folders, apply timestamped naming, detect duplicates, and support ZIP export for structured content storage.",
+        "details": "Create a Python module named file_manager.py that provides a FileManager class or set of functions for managing content files. Implement logic to organize files into folders based on their domain (e.g., example.com/...), using os or pathlib for directory and file operations. When saving files, append a timestamp to filenames to ensure uniqueness and facilitate versioning. Implement duplicate detection by checking for existing files with the same content hash or name within the target directory. Provide methods to export selected or all organized files as a ZIP archive, preserving the folder structure. Ensure compatibility with the output of the content processing module (data_processor.py). Use pathlib for modern, maintainable code and consider edge cases such as invalid filenames, deeply nested domains, and large file sets. Include docstrings and type hints for clarity.",
+        "testStrategy": "Write unit tests to verify: (1) correct creation of domain-based folders and file placement; (2) timestamped naming and uniqueness of saved files; (3) accurate detection and handling of duplicate files; (4) successful ZIP export with preserved folder structure and correct file contents; (5) handling of edge cases such as invalid domain names, special characters, and large numbers of files. Use temporary directories and mock data for isolation. Manually inspect exported ZIP archives for structure and content integrity.",
+        "status": "pending",
+        "dependencies": [
+          1,
+          3
+        ],
+        "priority": "high",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Set Up Domain-Based Folder Structure",
+            "description": "Implement logic to create and manage folders based on the domain of each file, ensuring that deeply nested domains are handled correctly and invalid characters are sanitized.",
+            "dependencies": [],
+            "details": "Use pathlib to parse domain names and create corresponding directory structures. Sanitize folder names to remove or replace invalid filesystem characters. Ensure that nested domains (e.g., sub.example.com) are represented as nested folders or a valid flat structure. Include error handling for edge cases such as excessively long paths.",
+            "status": "pending",
+            "testStrategy": "Test with a variety of domain names, including those with subdomains, special characters, and long names. Verify that the correct folder structure is created and accessible."
+          },
+          {
+            "id": 2,
+            "title": "Implement Timestamped Naming Convention",
+            "description": "Develop a method to append a timestamp to each filename upon saving, ensuring uniqueness and supporting versioning.",
+            "dependencies": [
+              1
+            ],
+            "details": "When saving a file, generate a timestamp string (e.g., YYYYMMDD_HHMMSS) and append it to the base filename before the extension. Use pathlib for file path manipulations. Ensure the timestamp format is consistent and sortable. Handle cases where the original filename contains invalid characters.",
+            "status": "pending",
+            "testStrategy": "Save multiple files with the same base name in quick succession and verify that each has a unique, correctly formatted timestamp."
+          },
+          {
+            "id": 3,
+            "title": "Develop Duplicate Detection Logic",
+            "description": "Implement functionality to detect duplicate files within the target directory by comparing content hashes or filenames.",
+            "dependencies": [
+              2
+            ],
+            "details": "Calculate a hash (e.g., SHA256) of each file's content before saving. Check the target directory for existing files with the same hash or name. If a duplicate is found, skip saving or handle according to a defined policy (e.g., overwrite, skip, or version). Use efficient file reading to handle large files.",
+            "status": "pending",
+            "testStrategy": "Attempt to save files with identical and different content. Verify that duplicates are detected and handled as specified."
+          },
+          {
+            "id": 4,
+            "title": "Enable Organized Storage and Retrieval",
+            "description": "Ensure that all files are stored in their appropriate domain-based folders with timestamped names, and provide methods to retrieve files or lists of files based on domain or other metadata.",
+            "dependencies": [
+              3
+            ],
+            "details": "Implement methods to list files by domain, retrieve file metadata (e.g., creation time, hash), and access files efficiently. Use pathlib for directory traversal and file operations. Ensure compatibility with large file sets and deeply nested structures.",
+            "status": "pending",
+            "testStrategy": "Store and retrieve files across multiple domains. Validate that retrieval methods return accurate and complete results."
+          },
+          {
+            "id": 5,
+            "title": "Implement ZIP Export Functionality",
+            "description": "Provide methods to export selected or all organized files as a ZIP archive, preserving the folder structure.",
+            "dependencies": [
+              4
+            ],
+            "details": "Use Python's zipfile module to create ZIP archives. Allow selection of files or domains to include in the export. Ensure that the ZIP archive mirrors the internal folder structure. Handle large file sets efficiently and provide progress feedback if necessary.",
+            "status": "pending",
+            "testStrategy": "Export various selections of files and domains. Verify that the resulting ZIP archive contains the correct files and folder structure."
+          },
+          {
+            "id": 6,
+            "title": "Generate and Manage File Metadata",
+            "description": "Create and maintain metadata for each file, including domain, timestamp, hash, and original filename, to support organization, retrieval, and export operations.",
+            "dependencies": [
+              4
+            ],
+            "details": "Design a metadata structure (e.g., JSON or CSV) to store relevant information for each file. Update metadata upon file addition, deletion, or modification. Ensure metadata is synchronized with the actual file system and is used by retrieval and export methods.",
+            "status": "pending",
+            "testStrategy": "Add, remove, and modify files. Check that metadata remains accurate and consistent with the file system."
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Implement batch processing with async operations and progress tracking",
+        "description": "Add support for processing multiple URLs in batches, enabling asynchronous scraping, progress tracking, and user feedback for efficient bulk operations.",
+        "details": "Extend the application to accept and process multiple URLs in a single batch. Design a batch processing module or class that:\n- Accepts a list of URLs (via UI or API) and initiates scraping for each using the Firecrawl client.\n- Utilizes Python's asyncio (e.g., asyncio.gather, aiohttp) or concurrent.futures for asynchronous execution, ensuring efficient parallel processing of requests[2][3].\n- Tracks the progress of each URL (e.g., pending, running, completed, failed) and aggregates overall batch status, storing job IDs or status URLs if provided by the backend[2][3].\n- Integrates with the Streamlit UI to display real-time progress bars, per-URL status, and error messages for user feedback.\n- Handles large batches by chunking requests if necessary and provides clear feedback on batch limits or errors.\n- Ensures robust error handling and retries for failed URLs, and logs results for later review.\n- Optionally, persists batch job metadata (e.g., in a JSON or database file) for audit and recovery.\nCoordinate with the Firecrawl client for actual scraping and the file management system for storing results.",
+        "testStrategy": "1. Write unit and integration tests to verify that multiple URLs can be submitted and processed concurrently, with correct results for each.\n2. Simulate batches with a mix of valid and invalid URLs to ensure error handling and progress tracking work as expected.\n3. Test UI feedback: confirm that progress bars and status updates reflect real-time batch progress and individual URL outcomes.\n4. Validate that results are saved using the file management system, with correct organization and no data loss.\n5. Stress-test with large batches to ensure performance and stability, and verify chunking or throttling if implemented.",
+        "status": "pending",
+        "dependencies": [
+          1,
+          2,
+          4
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 6,
+        "title": "Implement configuration management system for scraping profiles",
+        "description": "Develop a configuration management system that enables creation and management of scraping profiles for Google CodeLabs and other dynamic sites, supporting customizable JavaScript execution timeouts, content filtering, and site-specific optimizations.",
+        "details": "Design and implement a configuration management module (e.g., config_manager.py) that allows users to define, store, and retrieve scraping profiles for various target sites. Each profile should support settings such as JavaScript execution timeout, content filtering rules (e.g., CSS selectors, keywords), and site-specific scraping options (e.g., user agent, delay, proxy usage). Use a structured format (YAML or JSON) for profile definitions, and provide functions to load, validate, and update profiles at runtime. Integrate with the scraping workflow so that the correct profile is applied based on the target domain. Ensure extensibility for future site-specific parameters. Consider security best practices for handling sensitive configuration data (e.g., API keys, credentials) by supporting environment variable overrides or encrypted storage. Provide sample profiles for Google CodeLabs and at least one other dynamic site, demonstrating customization of JavaScript timeouts and content filters. Document the configuration schema and usage examples.",
+        "testStrategy": "1. Write unit tests to verify correct loading, validation, and updating of configuration profiles from disk and environment variables. 2. Test that site-specific settings (e.g., JavaScript timeout, content filters) are correctly applied during scraping for Google CodeLabs and another dynamic site. 3. Simulate invalid or missing configuration scenarios to ensure robust error handling and fallback behavior. 4. Verify that sensitive data is not exposed in logs or error messages. 5. Confirm that the system supports adding new site profiles without code changes, using only configuration files.",
+        "status": "pending",
+        "dependencies": [
+          1,
+          2
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 7,
+        "title": "Implement comprehensive error handling and retry logic for scraping operations",
+        "description": "Add robust error handling with user-friendly messages, automatic retry mechanisms (up to 3 attempts), detailed logging, and graceful degradation for JavaScript-heavy sites in the scraping workflow.",
+        "details": "Integrate comprehensive error handling throughout the scraping and crawling modules by wrapping all network and JavaScript execution operations in try/catch/finally blocks. For each operation, catch and classify errors (e.g., network errors, timeouts, JavaScript execution failures) using built-in and custom error types. Implement an automatic retry mechanism that attempts failed operations up to three times with exponential backoff. Ensure that all errors are logged with detailed context (error type, message, stack trace, affected URL, and attempt number) using a centralized logging utility. For user-facing components, display clear, actionable error messages without exposing sensitive details. For JavaScript-heavy sites that fail after retries, implement graceful degradation by returning partial results or fallback content, and flag these cases in the output. Ensure that error handling logic is consistent across both synchronous and asynchronous (batch) operations, and that it integrates with the configuration management system for site-specific error handling policies.",
+        "testStrategy": "1. Write unit and integration tests to simulate various error scenarios (network failures, timeouts, JavaScript errors, invalid URLs) and verify that errors are caught, logged, and retried up to three times. 2. Confirm that user-facing messages are clear and appropriate for each error type. 3. Test that batch processing correctly handles partial failures and continues processing remaining URLs. 4. Validate that logs contain sufficient detail for debugging. 5. For JavaScript-heavy sites, simulate persistent failures and verify that graceful degradation returns fallback content and flags the result appropriately. 6. Test configuration overrides for error handling and retry policies per site profile.",
+        "status": "pending",
+        "dependencies": [
+          2,
+          5,
+          6
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 8,
+        "title": "Develop Comprehensive Automated Testing Suite for Content Extraction and Processing",
+        "description": "Implement an automated testing suite that validates the full extraction and processing pipeline, including Google CodeLabs URLs, markdown output quality for AI consumption, batch processing, and JavaScript-rendered content extraction.",
+        "details": "Design and implement a robust testing suite using pytest (or a similar framework) to cover the end-to-end workflow. Key components:\n- **Primary Test URLs:** Select a representative set of Google CodeLabs and other dynamic/static URLs as fixtures. Ensure coverage of both simple and JavaScript-heavy pages.\n- **Markdown Output Validation:** After extraction and processing, compare markdown output against expected results. Validate structure, code block preservation, link formatting, and AI-readiness (e.g., readability, context retention). Use snapshot testing for markdown outputs to catch regressions.\n- **Batch Processing:** Simulate batch jobs with mixed valid/invalid URLs. Assert correct parallel execution, progress tracking, and error handling. Ensure results are aggregated and failures are reported clearly.\n- **JavaScript-rendered Content:** For dynamic sites, verify that JavaScript-executed content is fully extracted (e.g., using Puppeteer or Firecrawl's JS support). Compare extracted data to ground truth or visible page content. Include tests for timeouts and partial loads.\n- **Integration Points:** Mock or stub external dependencies (e.g., network, file system) where appropriate, but include full integration tests for critical paths.\n- **Regression and Edge Cases:** Add tests for malformed markdown, broken links, duplicate content, and large documents. Ensure the suite is easily extensible for new sites and formats.",
+        "testStrategy": "1. Run the suite against a curated list of Google CodeLabs and dynamic URLs, verifying extraction completeness and markdown output matches expected snapshots.\n2. For each test, assert that code blocks, links, and formatting are preserved and optimized for LLM consumption.\n3. Execute batch processing tests with mixed URL validity, confirming correct concurrency, progress updates, and error reporting.\n4. For JavaScript-rendered pages, compare extracted content to manual page inspection or known ground truth, ensuring dynamic elements are captured.\n5. Simulate edge cases (timeouts, malformed input, duplicates) and verify graceful handling and accurate reporting.\n6. Review test coverage reports to ensure all major modules and workflows are exercised.",
+        "status": "pending",
+        "dependencies": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 9,
+        "title": "Enhance Streamlit UI/UX with Progress Indicators, Real-Time Status, Content Preview, and Navigation",
+        "description": "Design and implement a professional Streamlit interface featuring progress indicators, real-time status updates, content preview, and user-friendly navigation to optimize the user experience.",
+        "details": "Redesign the Streamlit app layout for clarity and usability, leveraging Streamlit's theming and layout primitives (st.title, st.header, st.sidebar, st.columns) for clear structure and navigation[3]. Integrate progress indicators (e.g., st.progress, st.spinner) to visualize batch and individual URL processing status, updating in real time using st.session_state and event-driven callbacks[2]. Display real-time status updates for each URL, including pending, running, completed, and failed states, with clear visual cues (icons, color coding, or badges). Implement a content preview panel using st.markdown for markdown output and st.json for structured data, allowing users to inspect results before download or export[1]. Ensure navigation is intuitive by grouping controls logically (e.g., input, batch controls, results, export) and providing persistent sidebar navigation for switching between main app sections. Apply accessible theming and contrast best practices for readability and professional appearance[3].",
+        "testStrategy": "1. Manually test the UI by submitting single and batch URL jobs, verifying that progress indicators and real-time status updates reflect actual processing states. 2. Confirm that content previews render markdown and JSON outputs correctly for various result types. 3. Validate that navigation elements (sidebar, buttons, tabs) are intuitive and all app sections are accessible. 4. Use accessibility tools to check color contrast and text sizing. 5. Solicit user feedback on usability and iterate based on findings.",
+        "status": "pending",
+        "dependencies": [
+          1,
+          5
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 10,
+        "title": "Develop Monitoring and Analytics Dashboard for Scraping Operations",
+        "description": "Implement a comprehensive dashboard to monitor scraping statistics, track success and failure rates, assess content quality, monitor performance, and analyze usage for project oversight.",
+        "details": "Design and build a monitoring and analytics dashboard using Streamlit or a suitable web framework. Integrate real-time and historical data collection for key metrics: (1) scraping statistics (total jobs, jobs per domain, frequency), (2) success/failure tracking (per URL, per batch, error types), (3) content quality metrics (markdown structure, code block preservation, link integrity, AI-readiness scores), (4) performance monitoring (latency, throughput, resource usage), and (5) usage analytics (active users, most scraped domains, batch sizes). Store metrics in a persistent backend (e.g., SQLite, PostgreSQL, or cloud database). Visualize data with interactive charts, tables, and filters for time ranges and domains. Ensure the dashboard updates in near real-time, leveraging event-driven updates or periodic polling. Provide export options (CSV/JSON) for analytics data. Consider extensibility for future metrics and compliance with privacy requirements. Reference best practices for dashboard design and web scraping monitoring[1][2].",
+        "testStrategy": "1. Simulate scraping operations with a mix of successful and failed jobs, verifying that all metrics (counts, rates, error types) are accurately captured and displayed. 2. Validate real-time updates by triggering new jobs and confirming dashboard refresh. 3. Check content quality metrics by processing known markdown samples and ensuring scores/flags are correct. 4. Test performance metrics by running batch jobs and monitoring latency and throughput visualizations. 5. Confirm usage analytics reflect actual user and domain activity. 6. Export analytics data and verify file contents. 7. Conduct UI/UX review for clarity, responsiveness, and usability.",
+        "status": "pending",
+        "dependencies": [
+          3,
+          4,
+          5,
+          7,
+          9
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 11,
+        "title": "Create Comprehensive Project Documentation Suite",
+        "description": "Develop a complete documentation suite including a user manual, setup guide, API documentation, troubleshooting guide, and contribution guidelines to ensure maintainability and facilitate user adoption.",
+        "details": "1. Establish a centralized documentation repository (e.g., /docs directory) and select a documentation toolchain (such as Markdown, Sphinx, or MkDocs) for consistency and ease of maintenance.\n2. User Manual: Write clear, step-by-step instructions for all user-facing features, including navigation, content processing, file management, and dashboard usage. Include annotated screenshots and example workflows.\n3. Setup Guide: Provide detailed installation and configuration steps for all environments (local, production, self-hosted), covering prerequisites, dependency installation, environment variables, and initial project launch. Include troubleshooting for common setup issues.\n4. API Documentation: Document all public APIs and modules (e.g., firecrawl_client.py, data_processor.py, file_manager.py), including endpoint descriptions, input/output schemas, authentication, usage examples, and error codes. Use auto-generation tools where possible and supplement with usage scenarios.\n5. Troubleshooting Guide: List common errors, failure scenarios, and their resolutions for both end-users and developers. Include error messages, log locations, and escalation steps.\n6. Contribution Guidelines: Define standards for code style, branching, pull requests, testing, and documentation updates. Provide onboarding steps for new contributors and a code of conduct.\n7. Ensure all documentation is versioned, includes a revision history, and is accessible from the main project interface. Use diagrams and flowcharts to illustrate architecture and workflows where appropriate.",
+        "testStrategy": "1. Review each documentation section for completeness, clarity, and technical accuracy by conducting peer reviews with both developers and non-technical users.\n2. Follow the setup guide on a clean environment to verify reproducibility and resolve any ambiguities.\n3. Use API documentation to implement sample integrations and confirm all endpoints and examples are correct.\n4. Simulate common user and developer issues using the troubleshooting guide to ensure solutions are actionable.\n5. Validate that contribution guidelines are followed by submitting a test pull request and reviewing the onboarding process.\n6. Confirm all documentation is accessible, up-to-date, and versioned appropriately.",
+        "status": "pending",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "priority": "low",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-07-08T01:03:14.008Z",
+      "updated": "2025-07-08T04:18:50.250Z",
+      "description": "Firecrawl-Streamlit web scraper development tasks"
+    }
+  },
+  "firecrawl": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Set up project foundation with Streamlit interface and Firecrawl dependencies",
+        "description": "Establish the initial project structure, create a basic Streamlit interface with a URL input field, and configure requirements.txt for Firecrawl integration.",
+        "details": "1. Create the following directory structure at the project root: 'streamlit-app/', 'data/', and 'config/'.\n2. Inside 'streamlit-app/', create an 'app.py' file that initializes a basic Streamlit application. Use 'import streamlit as st' and add a title and a text input field for URL entry using 'st.text_input(\"Enter URL\")'.\n3. Optionally, use 'st.form' for batching input if you plan to expand the form later, as per Streamlit best practices[4].\n4. In the project root, create a 'requirements.txt' file listing all necessary dependencies, including 'streamlit' and any packages required for Firecrawl integration (e.g., 'firecrawl', 'requests', etc.).\n5. Ensure all files are placed in their respective directories and that the structure is clean and ready for further development.",
+        "testStrategy": "- Verify that the directory structure ('streamlit-app/', 'data/', 'config/') exists and contains the correct files.\n- Run 'streamlit run streamlit-app/app.py' and confirm that the app launches with a visible title and a URL input field.\n- Enter a URL in the input field and ensure the value is captured (e.g., print or display it on the page).\n- Check that 'requirements.txt' includes all necessary dependencies and that running 'pip install -r requirements.txt' completes without errors.",
+        "status": "pending",
+        "dependencies": [],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 2,
+        "title": "Implement Firecrawl client integration",
+        "description": "Develop firecrawl_client.py to provide an API wrapper for Firecrawl, including connection testing and configuration management for a self-hosted instance.",
+        "details": "Create a Python module named firecrawl_client.py in the appropriate directory (e.g., 'streamlit-app/' or a 'clients/' folder). Implement a FirecrawlClient class that wraps the Firecrawl Python SDK, supporting both scraping and crawling functionality. The client should:\n- Accept configuration for API key and API URL (for self-hosted instances) via environment variables, config files (e.g., config/firecrawl.yaml), or direct parameters.\n- Provide methods for scraping a single URL and crawling a website, exposing relevant options (formats, limits, etc.) as parameters.\n- Implement a connection test method that verifies API connectivity by making a lightweight request (e.g., fetching account info or a simple scrape with a known URL) and handling errors gracefully.\n- Include robust error handling for authentication, network, and API errors, returning informative messages.\n- Document usage and configuration in module docstrings.\nReference the Firecrawl Python SDK documentation for method signatures and configuration options. Ensure compatibility with self-hosted Firecrawl by allowing the API URL to be set explicitly.[1][2][3][4]",
+        "testStrategy": "- Set up environment variables and/or config files with valid and invalid API keys and API URLs.\n- Run unit tests to verify that the client can successfully connect to both the default and a self-hosted Firecrawl instance, using the connection test method.\n- Test scraping and crawling methods with valid URLs and check that the returned data matches expected formats (markdown, HTML, etc.).\n- Simulate error conditions (invalid key, unreachable API, malformed URL) and confirm that errors are handled and reported correctly.\n- Review code for clear documentation and configuration flexibility.",
+        "status": "pending",
+        "dependencies": [
+          1
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 3,
+        "title": "Develop content processing module with markdown optimization and AI-friendly formatting",
+        "description": "Create data_processor.py to optimize markdown content, preserve code blocks, process links, and format text for LLM consumption.",
+        "details": "Implement a Python module named data_processor.py that provides functions or a class for processing and optimizing markdown content. Key features should include: (1) Markdown optimization—refine document structure, enforce style consistency, and improve readability using context-aware formatting; (2) Code block preservation—detect and retain fenced code blocks (triple backticks), optionally applying language detection and syntax highlighting metadata for downstream use; (3) Link processing—identify, validate, and if necessary, rewrite or annotate internal and external links for clarity and SEO; (4) AI-friendly formatting—ensure output is structured for large language model (LLM) consumption, such as clear section headers, semantic hierarchy, and removal of extraneous markdown artifacts. Consider leveraging Python-Markdown and relevant extensions (e.g., fenced_code, syntax highlighting) for robust parsing and transformation. Provide a clear API for processing raw markdown input and returning optimized output. Include comprehensive docstrings and usage examples.",
+        "testStrategy": "Write unit tests covering: (1) preservation and correct formatting of fenced code blocks with various languages; (2) markdown structure optimization (e.g., heading normalization, list formatting); (3) correct identification and processing of links, including edge cases (broken, relative, or malformed links); (4) output formatting suitable for LLM input (e.g., no broken markdown, consistent style). Use sample markdown files with mixed content (text, code, links) as test fixtures. Verify that processed output matches expected results and that code blocks remain intact. Include tests for error handling and malformed input.",
+        "status": "pending",
+        "dependencies": [
+          1
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 4,
+        "title": "Implement file management system with domain-based organization and ZIP export",
+        "description": "Develop file_manager.py to organize files into domain-based folders, apply timestamped naming, detect duplicates, and support ZIP export for structured content storage.",
+        "details": "Create a Python module named file_manager.py that provides a FileManager class or set of functions for managing content files. Implement logic to organize files into folders based on their domain (e.g., example.com/...), using os or pathlib for directory and file operations. When saving files, append a timestamp to filenames to ensure uniqueness and facilitate versioning. Implement duplicate detection by checking for existing files with the same content hash or name within the target directory. Provide methods to export selected or all organized files as a ZIP archive, preserving the folder structure. Ensure compatibility with the output of the content processing module (data_processor.py). Use pathlib for modern, maintainable code and consider edge cases such as invalid filenames, deeply nested domains, and large file sets. Include docstrings and type hints for clarity.",
+        "testStrategy": "Write unit tests to verify: (1) correct creation of domain-based folders and file placement; (2) timestamped naming and uniqueness of saved files; (3) accurate detection and handling of duplicate files; (4) successful ZIP export with preserved folder structure and correct file contents; (5) handling of edge cases such as invalid domain names, special characters, and large numbers of files. Use temporary directories and mock data for isolation. Manually inspect exported ZIP archives for structure and content integrity.",
+        "status": "pending",
+        "dependencies": [
+          1,
+          3
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 5,
+        "title": "Implement batch processing with async operations and progress tracking",
+        "description": "Add support for processing multiple URLs in batches, enabling asynchronous scraping, progress tracking, and user feedback for efficient bulk operations.",
+        "details": "Extend the application to accept and process multiple URLs in a single batch. Design a batch processing module or class that:\n- Accepts a list of URLs (via UI or API) and initiates scraping for each using the Firecrawl client.\n- Utilizes Python's asyncio (e.g., asyncio.gather, aiohttp) or concurrent.futures for asynchronous execution, ensuring efficient parallel processing of requests[2][3].\n- Tracks the progress of each URL (e.g., pending, running, completed, failed) and aggregates overall batch status, storing job IDs or status URLs if provided by the backend[2][3].\n- Integrates with the Streamlit UI to display real-time progress bars, per-URL status, and error messages for user feedback.\n- Handles large batches by chunking requests if necessary and provides clear feedback on batch limits or errors.\n- Ensures robust error handling and retries for failed URLs, and logs results for later review.\n- Optionally, persists batch job metadata (e.g., in a JSON or database file) for audit and recovery.\nCoordinate with the Firecrawl client for actual scraping and the file management system for storing results.",
+        "testStrategy": "1. Write unit and integration tests to verify that multiple URLs can be submitted and processed concurrently, with correct results for each.\n2. Simulate batches with a mix of valid and invalid URLs to ensure error handling and progress tracking work as expected.\n3. Test UI feedback: confirm that progress bars and status updates reflect real-time batch progress and individual URL outcomes.\n4. Validate that results are saved using the file management system, with correct organization and no data loss.\n5. Stress-test with large batches to ensure performance and stability, and verify chunking or throttling if implemented.",
+        "status": "pending",
+        "dependencies": [
+          1,
+          2,
+          4
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 6,
+        "title": "Implement configuration management system for scraping profiles",
+        "description": "Develop a configuration management system that enables creation and management of scraping profiles for Google CodeLabs and other dynamic sites, supporting customizable JavaScript execution timeouts, content filtering, and site-specific optimizations.",
+        "details": "Design and implement a configuration management module (e.g., config_manager.py) that allows users to define, store, and retrieve scraping profiles for various target sites. Each profile should support settings such as JavaScript execution timeout, content filtering rules (e.g., CSS selectors, keywords), and site-specific scraping options (e.g., user agent, delay, proxy usage). Use a structured format (YAML or JSON) for profile definitions, and provide functions to load, validate, and update profiles at runtime. Integrate with the scraping workflow so that the correct profile is applied based on the target domain. Ensure extensibility for future site-specific parameters. Consider security best practices for handling sensitive configuration data (e.g., API keys, credentials) by supporting environment variable overrides or encrypted storage. Provide sample profiles for Google CodeLabs and at least one other dynamic site, demonstrating customization of JavaScript timeouts and content filters. Document the configuration schema and usage examples.",
+        "testStrategy": "1. Write unit tests to verify correct loading, validation, and updating of configuration profiles from disk and environment variables. 2. Test that site-specific settings (e.g., JavaScript timeout, content filters) are correctly applied during scraping for Google CodeLabs and another dynamic site. 3. Simulate invalid or missing configuration scenarios to ensure robust error handling and fallback behavior. 4. Verify that sensitive data is not exposed in logs or error messages. 5. Confirm that the system supports adding new site profiles without code changes, using only configuration files.",
+        "status": "pending",
+        "dependencies": [
+          1,
+          2
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 7,
+        "title": "Implement comprehensive error handling and retry logic for scraping operations",
+        "description": "Add robust error handling with user-friendly messages, automatic retry mechanisms (up to 3 attempts), detailed logging, and graceful degradation for JavaScript-heavy sites in the scraping workflow.",
+        "details": "Integrate comprehensive error handling throughout the scraping and crawling modules by wrapping all network and JavaScript execution operations in try/catch/finally blocks. For each operation, catch and classify errors (e.g., network errors, timeouts, JavaScript execution failures) using built-in and custom error types. Implement an automatic retry mechanism that attempts failed operations up to three times with exponential backoff. Ensure that all errors are logged with detailed context (error type, message, stack trace, affected URL, and attempt number) using a centralized logging utility. For user-facing components, display clear, actionable error messages without exposing sensitive details. For JavaScript-heavy sites that fail after retries, implement graceful degradation by returning partial results or fallback content, and flag these cases in the output. Ensure that error handling logic is consistent across both synchronous and asynchronous (batch) operations, and that it integrates with the configuration management system for site-specific error handling policies.",
+        "testStrategy": "1. Write unit and integration tests to simulate various error scenarios (network failures, timeouts, JavaScript errors, invalid URLs) and verify that errors are caught, logged, and retried up to three times. 2. Confirm that user-facing messages are clear and appropriate for each error type. 3. Test that batch processing correctly handles partial failures and continues processing remaining URLs. 4. Validate that logs contain sufficient detail for debugging. 5. For JavaScript-heavy sites, simulate persistent failures and verify that graceful degradation returns fallback content and flags the result appropriately. 6. Test configuration overrides for error handling and retry policies per site profile.",
+        "status": "pending",
+        "dependencies": [
+          2,
+          5,
+          6
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 8,
+        "title": "Develop Comprehensive Automated Testing Suite for Content Extraction and Processing",
+        "description": "Implement an automated testing suite that validates the full extraction and processing pipeline, including Google CodeLabs URLs, markdown output quality for AI consumption, batch processing, and JavaScript-rendered content extraction.",
+        "details": "Design and implement a robust testing suite using pytest (or a similar framework) to cover the end-to-end workflow. Key components:\n- **Primary Test URLs:** Select a representative set of Google CodeLabs and other dynamic/static URLs as fixtures. Ensure coverage of both simple and JavaScript-heavy pages.\n- **Markdown Output Validation:** After extraction and processing, compare markdown output against expected results. Validate structure, code block preservation, link formatting, and AI-readiness (e.g., readability, context retention). Use snapshot testing for markdown outputs to catch regressions.\n- **Batch Processing:** Simulate batch jobs with mixed valid/invalid URLs. Assert correct parallel execution, progress tracking, and error handling. Ensure results are aggregated and failures are reported clearly.\n- **JavaScript-rendered Content:** For dynamic sites, verify that JavaScript-executed content is fully extracted (e.g., using Puppeteer or Firecrawl's JS support). Compare extracted data to ground truth or visible page content. Include tests for timeouts and partial loads.\n- **Integration Points:** Mock or stub external dependencies (e.g., network, file system) where appropriate, but include full integration tests for critical paths.\n- **Regression and Edge Cases:** Add tests for malformed markdown, broken links, duplicate content, and large documents. Ensure the suite is easily extensible for new sites and formats.",
+        "testStrategy": "1. Run the suite against a curated list of Google CodeLabs and dynamic URLs, verifying extraction completeness and markdown output matches expected snapshots.\n2. For each test, assert that code blocks, links, and formatting are preserved and optimized for LLM consumption.\n3. Execute batch processing tests with mixed URL validity, confirming correct concurrency, progress updates, and error reporting.\n4. For JavaScript-rendered pages, compare extracted content to manual page inspection or known ground truth, ensuring dynamic elements are captured.\n5. Simulate edge cases (timeouts, malformed input, duplicates) and verify graceful handling and accurate reporting.\n6. Review test coverage reports to ensure all major modules and workflows are exercised.",
+        "status": "pending",
+        "dependencies": [
+          2,
+          3,
+          4,
+          5,
+          6,
+          7
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 9,
+        "title": "Enhance Streamlit UI/UX with Progress Indicators, Real-Time Status, Content Preview, and Navigation",
+        "description": "Design and implement a professional Streamlit interface featuring progress indicators, real-time status updates, content preview, and user-friendly navigation to optimize the user experience.",
+        "details": "Redesign the Streamlit app layout for clarity and usability, leveraging Streamlit's theming and layout primitives (st.title, st.header, st.sidebar, st.columns) for clear structure and navigation[3]. Integrate progress indicators (e.g., st.progress, st.spinner) to visualize batch and individual URL processing status, updating in real time using st.session_state and event-driven callbacks[2]. Display real-time status updates for each URL, including pending, running, completed, and failed states, with clear visual cues (icons, color coding, or badges). Implement a content preview panel using st.markdown for markdown output and st.json for structured data, allowing users to inspect results before download or export[1]. Ensure navigation is intuitive by grouping controls logically (e.g., input, batch controls, results, export) and providing persistent sidebar navigation for switching between main app sections. Apply accessible theming and contrast best practices for readability and professional appearance[3].",
+        "testStrategy": "1. Manually test the UI by submitting single and batch URL jobs, verifying that progress indicators and real-time status updates reflect actual processing states. 2. Confirm that content previews render markdown and JSON outputs correctly for various result types. 3. Validate that navigation elements (sidebar, buttons, tabs) are intuitive and all app sections are accessible. 4. Use accessibility tools to check color contrast and text sizing. 5. Solicit user feedback on usability and iterate based on findings.",
+        "status": "pending",
+        "dependencies": [
+          1,
+          5
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 10,
+        "title": "Develop Monitoring and Analytics Dashboard for Scraping Operations",
+        "description": "Implement a comprehensive dashboard to monitor scraping statistics, track success and failure rates, assess content quality, monitor performance, and analyze usage for project oversight.",
+        "details": "Design and build a monitoring and analytics dashboard using Streamlit or a suitable web framework. Integrate real-time and historical data collection for key metrics: (1) scraping statistics (total jobs, jobs per domain, frequency), (2) success/failure tracking (per URL, per batch, error types), (3) content quality metrics (markdown structure, code block preservation, link integrity, AI-readiness scores), (4) performance monitoring (latency, throughput, resource usage), and (5) usage analytics (active users, most scraped domains, batch sizes). Store metrics in a persistent backend (e.g., SQLite, PostgreSQL, or cloud database). Visualize data with interactive charts, tables, and filters for time ranges and domains. Ensure the dashboard updates in near real-time, leveraging event-driven updates or periodic polling. Provide export options (CSV/JSON) for analytics data. Consider extensibility for future metrics and compliance with privacy requirements. Reference best practices for dashboard design and web scraping monitoring[1][2].",
+        "testStrategy": "1. Simulate scraping operations with a mix of successful and failed jobs, verifying that all metrics (counts, rates, error types) are accurately captured and displayed. 2. Validate real-time updates by triggering new jobs and confirming dashboard refresh. 3. Check content quality metrics by processing known markdown samples and ensuring scores/flags are correct. 4. Test performance metrics by running batch jobs and monitoring latency and throughput visualizations. 5. Confirm usage analytics reflect actual user and domain activity. 6. Export analytics data and verify file contents. 7. Conduct UI/UX review for clarity, responsiveness, and usability.",
+        "status": "pending",
+        "dependencies": [
+          3,
+          4,
+          5,
+          7,
+          9
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 11,
+        "title": "Create Comprehensive Project Documentation Suite",
+        "description": "Develop a complete documentation suite including a user manual, setup guide, API documentation, troubleshooting guide, and contribution guidelines to ensure maintainability and facilitate user adoption.",
+        "details": "1. Establish a centralized documentation repository (e.g., /docs directory) and select a documentation toolchain (such as Markdown, Sphinx, or MkDocs) for consistency and ease of maintenance.\n2. User Manual: Write clear, step-by-step instructions for all user-facing features, including navigation, content processing, file management, and dashboard usage. Include annotated screenshots and example workflows.\n3. Setup Guide: Provide detailed installation and configuration steps for all environments (local, production, self-hosted), covering prerequisites, dependency installation, environment variables, and initial project launch. Include troubleshooting for common setup issues.\n4. API Documentation: Document all public APIs and modules (e.g., firecrawl_client.py, data_processor.py, file_manager.py), including endpoint descriptions, input/output schemas, authentication, usage examples, and error codes. Use auto-generation tools where possible and supplement with usage scenarios.\n5. Troubleshooting Guide: List common errors, failure scenarios, and their resolutions for both end-users and developers. Include error messages, log locations, and escalation steps.\n6. Contribution Guidelines: Define standards for code style, branching, pull requests, testing, and documentation updates. Provide onboarding steps for new contributors and a code of conduct.\n7. Ensure all documentation is versioned, includes a revision history, and is accessible from the main project interface. Use diagrams and flowcharts to illustrate architecture and workflows where appropriate.",
+        "testStrategy": "1. Review each documentation section for completeness, clarity, and technical accuracy by conducting peer reviews with both developers and non-technical users.\n2. Follow the setup guide on a clean environment to verify reproducibility and resolve any ambiguities.\n3. Use API documentation to implement sample integrations and confirm all endpoints and examples are correct.\n4. Simulate common user and developer issues using the troubleshooting guide to ensure solutions are actionable.\n5. Validate that contribution guidelines are followed by submitting a test pull request and reviewing the onboarding process.\n6. Confirm all documentation is accessible, up-to-date, and versioned appropriately.",
+        "status": "pending",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          6,
+          7,
+          8,
+          9,
+          10
+        ],
+        "priority": "low",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-07-08T01:03:14.008Z",
+      "updated": "2025-07-08T04:18:50.250Z",
+      "description": "Firecrawl-Streamlit web scraper development tasks"
+    }
+  }
+}

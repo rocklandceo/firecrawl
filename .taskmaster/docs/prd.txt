@@ -1,0 +1,271 @@
+# Firecrawl-Streamlit Web Scraper - Product Requirements Document
+
+## 1. PROJECT OVERVIEW
+
+### 1.1 Product Vision
+Create a professional Streamlit web application that leverages Firecrawl to intelligently scrape JavaScript-heavy websites, with specific optimization for Google CodeLabs pages and similar dynamic content platforms. The application will output clean, AI-ready markdown files while maintaining human readability.
+
+### 1.2 Business Objectives
+- Enable efficient extraction of content from JavaScript-rendered websites
+- Produce high-quality markdown files optimized for AI agent consumption (ChatGPT, etc.)
+- Provide a user-friendly interface for non-technical users
+- Support batch processing and automated content organization
+- Maintain professional-grade reliability and error handling
+
+### 1.3 Target Audience
+- AI researchers and developers needing training data
+- Content creators requiring structured documentation
+- Technical writers processing tutorial content
+- Developers working with dynamic web content
+
+## 2. FUNCTIONAL REQUIREMENTS
+
+### 2.1 Core Scraping Functionality
+- **Primary Targets**: Google CodeLabs pages with JavaScript-rendered content
+- **Secondary Targets**: Dynamic websites with progressive content loading, multi-step tutorials, interactive elements
+- **Content Extraction**: Full content extraction including JavaScript-executed elements
+- **Format Support**: Clean markdown (primary), structured JSON (secondary)
+- **Batch Processing**: Support for multiple URL processing with progress tracking
+
+### 2.2 User Interface Requirements
+- **Framework**: Streamlit-based web interface
+- **URL Input**: Single URL and batch URL input options
+- **Configuration Panel**: Scraping options and output format selection
+- **Progress Tracking**: Real-time scraping progress with detailed status
+- **Results Display**: Preview of scraped content before download
+- **Download Options**: Individual file downloads and bulk exports
+
+### 2.3 Output Management
+- **Primary Format**: Clean markdown optimized for LLM consumption
+- **Secondary Format**: Structured JSON with comprehensive metadata
+- **File Organization**: Automated directory structure with timestamps
+- **Naming Convention**: Domain-based organization with sequential numbering
+- **Export Options**: ZIP archives for bulk downloads
+
+### 2.4 Content Processing
+- **Markdown Optimization**: Proper headers, code blocks, content segmentation
+- **Code Block Preservation**: Maintain syntax highlighting and formatting
+- **Link Processing**: Convert relative links to absolute URLs
+- **Image Handling**: Download and reference images locally
+- **Text Cleaning**: Remove navigation elements and advertisements
+
+## 3. TECHNICAL REQUIREMENTS
+
+### 3.1 Technology Stack
+- **Frontend**: Streamlit 1.28.0+
+- **Backend Language**: Python 3.11+
+- **Scraping Engine**: Firecrawl (self-hosted local instance)
+- **Data Processing**: Pandas for analytics and data manipulation
+- **File Management**: Pathlib for cross-platform compatibility
+- **Configuration**: YAML and JSON configuration files
+
+### 3.2 Architecture Components
+- **Main Application** (`app.py`): Streamlit interface and user interaction
+- **Firecrawl Client** (`firecrawl_client.py`): API wrapper and communication
+- **Data Processor** (`data_processor.py`): Content formatting and optimization
+- **File Manager** (`file_manager.py`): File operations and organization
+- **Configuration Manager**: Settings and profile management
+
+### 3.3 Directory Structure
+```
+firecrawl-local/
+├── streamlit-app/
+│   ├── app.py                    # Main Streamlit interface
+│   ├── firecrawl_client.py      # Firecrawl API wrapper
+│   ├── data_processor.py        # Content processing & formatting
+│   ├── file_manager.py          # File operations & organization
+│   └── requirements.txt         # Dependencies
+├── data/
+│   ├── scraped/                 # Raw scraped content
+│   │   ├── markdown/           # Markdown files by domain
+│   │   ├── json/              # Structured data exports
+│   │   └── metadata/          # Scraping metadata & logs
+│   └── exports/                # Processed exports for AI
+├── config/
+│   ├── scraping_profiles.json  # Pre-configured site profiles
+│   └── firecrawl_config.yaml  # Firecrawl settings
+└── firecrawl/                  # Self-hosted Firecrawl repository
+```
+
+### 3.4 Dependencies
+- streamlit>=1.28.0
+- firecrawl-py>=1.0.0
+- requests>=2.31.0
+- pandas>=2.0.0
+- pathlib>=1.0.0
+- python-dotenv>=1.0.0
+- pydantic>=2.0.0
+
+## 4. NON-FUNCTIONAL REQUIREMENTS
+
+### 4.1 Performance Requirements
+- **Response Time**: Initial scraping response within 5 seconds
+- **Throughput**: Support for processing 10+ URLs concurrently
+- **Memory Usage**: Efficient memory management for large content processing
+- **Caching**: Implement intelligent caching to avoid duplicate scrapes
+- **Async Processing**: Non-blocking UI during scraping operations
+
+### 4.2 Reliability Requirements
+- **Error Handling**: Comprehensive try-catch blocks with user-friendly messages
+- **Retry Mechanisms**: Automatic retry for failed scrapes with exponential backoff
+- **Logging**: Detailed error logging for debugging and monitoring
+- **Data Validation**: Input validation and sanitization
+- **Graceful Degradation**: Partial success handling for batch operations
+
+### 4.3 Usability Requirements
+- **Intuitive Interface**: Clean, professional Streamlit design
+- **Progress Feedback**: Real-time progress indicators and status updates
+- **Error Communication**: Clear, actionable error messages
+- **Documentation**: Comprehensive user guide and API documentation
+- **Accessibility**: Follow web accessibility best practices
+
+### 4.4 Security Requirements
+- **Input Sanitization**: Validate and sanitize all user inputs
+- **Rate Limiting**: Implement respectful scraping practices
+- **Data Privacy**: Secure handling of scraped content
+- **Local Operation**: All processing performed locally for data security
+
+## 5. FEATURE SPECIFICATIONS
+
+### 5.1 URL Input and Validation
+- Single URL input with real-time validation
+- Batch URL upload via text area or file upload
+- URL format validation and correction suggestions
+- Domain whitelist/blacklist functionality
+
+### 5.2 Scraping Configuration
+- Selectable output formats (markdown, JSON, both)
+- Configurable scraping depth and scope
+- Custom headers and user agent settings
+- JavaScript execution timeout controls
+- Content filtering options
+
+### 5.3 Content Processing Options
+- Markdown formatting styles (GitHub, CommonMark, custom)
+- Code block language detection and highlighting
+- Image download and local referencing
+- Link conversion (relative to absolute)
+- Content cleaning and optimization levels
+
+### 5.4 File Management Features
+- Automatic directory creation and organization
+- Custom naming conventions and templates
+- Metadata file generation with scraping details
+- Bulk export and download options
+- File preview and editing capabilities
+
+### 5.5 Monitoring and Analytics
+- Scraping success/failure statistics
+- Content quality metrics and reporting
+- Performance monitoring and optimization suggestions
+- Usage analytics and historical data
+
+## 6. TESTING REQUIREMENTS
+
+### 6.1 Primary Test Cases
+**Test URLs:**
+1. `https://codelabs.developers.google.com/deploy-manage-observe-adk-cloud-run#`
+2. `https://codelabs.developers.google.com/instavibe-adk-multi-agents/instructions?hl=en#`
+
+**Success Criteria:**
+- Extract all tutorial steps and content completely
+- Preserve code blocks with proper syntax highlighting
+- Generate clean, readable markdown suitable for AI training
+- Handle JavaScript-rendered content without information loss
+- Create organized file structure with comprehensive metadata
+
+### 6.2 Additional Testing Requirements
+- **Dynamic Content Testing**: Various JavaScript-heavy websites
+- **Batch Processing Testing**: Multiple URLs with different content types
+- **Error Handling Testing**: Invalid URLs, network failures, timeout scenarios
+- **Performance Testing**: High-volume scraping and memory usage
+- **Output Quality Testing**: Markdown readability and AI compatibility
+
+### 6.3 Quality Assurance
+- **Unit Testing**: Individual component functionality
+- **Integration Testing**: End-to-end workflow validation
+- **User Acceptance Testing**: Real-world scenario validation
+- **Performance Testing**: Load and stress testing
+- **Security Testing**: Input validation and data protection
+
+## 7. IMPLEMENTATION PHASES
+
+### Phase 1: Foundation (MVP)
+- Basic Streamlit interface with URL input
+- Firecrawl client integration and connection testing
+- Simple content extraction and markdown output
+- Basic error handling and user feedback
+
+### Phase 2: Core Features
+- Advanced content processing and markdown optimization
+- File management and organization system
+- Configuration options and user preferences
+- Batch processing capabilities
+
+### Phase 3: Advanced Features
+- Performance optimization and async processing
+- Advanced error handling and retry mechanisms
+- Analytics and monitoring dashboard
+- Export and sharing capabilities
+
+### Phase 4: Polish and Production
+- UI/UX improvements and accessibility
+- Comprehensive documentation and user guides
+- Production deployment preparation
+- Advanced testing and quality assurance
+
+## 8. SUCCESS METRICS
+
+### 8.1 Technical Metrics
+- **Scraping Success Rate**: >95% successful content extraction
+- **Processing Speed**: <30 seconds per average webpage
+- **Content Quality**: >90% accuracy in markdown formatting
+- **Error Recovery**: <5% unrecoverable failures
+
+### 8.2 User Experience Metrics
+- **Interface Usability**: Intuitive operation requiring minimal training
+- **Processing Transparency**: Clear progress indication and status updates
+- **Output Quality**: Professional-grade markdown suitable for AI consumption
+- **Reliability**: Consistent performance across different website types
+
+## 9. CONSTRAINTS AND ASSUMPTIONS
+
+### 9.1 Technical Constraints
+- Local Firecrawl instance required for operation
+- Python 3.11+ environment dependency
+- Network connectivity required for scraping operations
+- Local storage requirements for scraped content
+
+### 9.2 Business Constraints
+- Self-hosted solution for data privacy requirements
+- Open-source components preferred for licensing compatibility
+- Cross-platform compatibility (Windows, macOS, Linux)
+- Resource-efficient operation for local deployment
+
+### 9.3 Assumptions
+- Users have basic technical knowledge for initial setup
+- Target websites allow automated scraping (respect robots.txt)
+- Firecrawl service maintains compatibility and availability
+- Local computing resources sufficient for processing requirements
+
+## 10. DELIVERABLES
+
+### 10.1 Software Components
+- Complete Streamlit web application
+- Firecrawl integration modules
+- Content processing and optimization tools
+- File management and organization system
+- Configuration and settings management
+
+### 10.2 Documentation
+- User manual and setup guide
+- API documentation and code comments
+- Configuration reference and examples
+- Troubleshooting guide and FAQ
+- Development and contribution guidelines
+
+### 10.3 Testing Assets
+- Comprehensive test suite with automated tests
+- Test data sets and validation examples
+- Performance benchmarking tools
+- Quality assurance checklists and procedures

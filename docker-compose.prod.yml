@@ -1,0 +1,77 @@
+# Docker Compose for Firecrawl-Streamlit Web Scraper
+# Production environment configuration
+
+version: '3.8'
+
+services:
+  firecrawl-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    container_name: firecrawl-streamlit-prod
+    ports:
+      - "8501:8501"
+    environment:
+      - ENVIRONMENT=production
+      - STREAMLIT_SERVER_HEADLESS=true
+      - STREAMLIT_SERVER_ADDRESS=0.0.0.0
+      - STREAMLIT_SERVER_PORT=8501
+      - STREAMLIT_SERVER_ENABLE_CORS=false
+      - STREAMLIT_SERVER_ENABLE_XSRF_PROTECTION=true
+    env_file:
+      - .env
+    volumes:
+      # Only mount data and logs for persistence
+      - ./data:/app/data
+      - ./logs:/app/logs
+      # Backup volume for production data safety
+      - prod_backups:/app/data/backups
+    networks:
+      - firecrawl-network
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 60s
+      timeout: 30s
+      retries: 5
+      start_period: 120s
+    # Security and resource limits
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=100m
+    mem_limit: 1g
+    cpus: '0.5'
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Production reverse proxy (optional)
+  nginx:
+    image: nginx:alpine
+    container_name: firecrawl-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    networks:
+      - firecrawl-network
+    depends_on:
+      - firecrawl-app
+    restart: always
+    profiles:
+      - with-nginx
+
+volumes:
+  prod_backups:
+    driver: local
+
+networks:
+  firecrawl-network:
+    driver: bridge

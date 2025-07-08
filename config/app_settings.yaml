@@ -1,0 +1,80 @@
+# Application Settings
+# General configuration for the Firecrawl-Streamlit Web Scraper
+
+app:
+  name: "Firecrawl Web Scraper"
+  version: "1.0.0"
+  description: "Professional web scraping for JavaScript-heavy websites"
+  
+  # Streamlit configuration
+  streamlit:
+    page_title: "Firecrawl Web Scraper"
+    page_icon: "🔥"
+    layout: "wide"
+    initial_sidebar_state: "expanded"
+
+storage:
+  # Data storage paths (relative to project root)
+  base_path: "data"
+  
+  # Subdirectories for organized storage
+  scraped_data:
+    markdown: "data/scraped/markdown"
+    json: "data/scraped/json"
+    metadata: "data/scraped/metadata"
+  
+  exports: "data/exports"
+  
+  # File naming conventions
+  timestamp_format: "%Y%m%d_%H%M%S"
+  domain_folders: true
+
+processing:
+  # Default processing options
+  defaults:
+    preserve_code_blocks: true
+    optimize_for_ai: true
+    clean_navigation: true
+    include_metadata: true
+  
+  # Content optimization
+  markdown:
+    heading_normalization: true
+    code_fence_language_detection: true
+    link_validation: true
+    remove_html_artifacts: true
+  
+  # Batch processing
+  batch:
+    max_concurrent: 5
+    progress_reporting: true
+    error_recovery: true
+
+ui:
+  # User interface settings
+  theme:
+    primary_color: "#FF6B35"
+    background_color: "#FFFFFF"
+    secondary_background_color: "#F0F2F6"
+    text_color: "#262730"
+  
+  # Form defaults
+  defaults:
+    js_timeout: 10
+    output_format: "markdown"
+    batch_size: 10
+
+test_urls:
+  # Predefined test URLs for development and testing
+  google_codelabs:
+    - "https://codelabs.developers.google.com/deploy-manage-observe-adk-cloud-run#"
+    - "https://codelabs.developers.google.com/instavibe-adk-multi-agents/instructions?hl=en#"
+  
+  general:
+    - "https://example.com"
+    - "https://httpbin.org/html"
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: "logs/app.log"

@@ -1,0 +1,21 @@
+# Task ID: 2
+# Title: Implement Firecrawl client integration
+# Status: pending
+# Dependencies: 1
+# Priority: high
+# Description: Develop firecrawl_client.py to provide an API wrapper for Firecrawl, including connection testing and configuration management for a self-hosted instance.
+# Details:
+Create a Python module named firecrawl_client.py in the appropriate directory (e.g., 'streamlit-app/' or a 'clients/' folder). Implement a FirecrawlClient class that wraps the Firecrawl Python SDK, supporting both scraping and crawling functionality. The client should:
+- Accept configuration for API key and API URL (for self-hosted instances) via environment variables, config files (e.g., config/firecrawl.yaml), or direct parameters.
+- Provide methods for scraping a single URL and crawling a website, exposing relevant options (formats, limits, etc.) as parameters.
+- Implement a connection test method that verifies API connectivity by making a lightweight request (e.g., fetching account info or a simple scrape with a known URL) and handling errors gracefully.
+- Include robust error handling for authentication, network, and API errors, returning informative messages.
+- Document usage and configuration in module docstrings.
+Reference the Firecrawl Python SDK documentation for method signatures and configuration options. Ensure compatibility with self-hosted Firecrawl by allowing the API URL to be set explicitly.[1][2][3][4]
+
+# Test Strategy:
+- Set up environment variables and/or config files with valid and invalid API keys and API URLs.
+- Run unit tests to verify that the client can successfully connect to both the default and a self-hosted Firecrawl instance, using the connection test method.
+- Test scraping and crawling methods with valid URLs and check that the returned data matches expected formats (markdown, HTML, etc.).
+- Simulate error conditions (invalid key, unreachable API, malformed URL) and confirm that errors are handled and reported correctly.
+- Review code for clear documentation and configuration flexibility.
