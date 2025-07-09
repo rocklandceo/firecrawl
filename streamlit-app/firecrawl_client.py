@@ -13,13 +13,58 @@ from firecrawl import FirecrawlApp
 from datetime import datetime
 import hashlib
 import json
+import sys
+from logging.handlers import RotatingFileHandler
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+# Ensure logs directory exists
+logs_dir = Path(__file__).parent.parent / 'logs'
+logs_dir.mkdir(exist_ok=True)
+
+# Configure logging with both console and file output
+log_file = logs_dir / f'firecrawl_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log'
+
+# Create custom formatter with more detail
+class ContextualFormatter(logging.Formatter):
+    """Custom formatter that adds contextual information to log records"""
+    def __init__(self):
+        super().__init__(
+            fmt='%(asctime)s - %(name)s - %(levelname)s - [%(session_id)s] - %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
+        )
+    
+    def format(self, record):
+        # Add session/request ID if not present
+        if not hasattr(record, 'session_id'):
+            record.session_id = '-'
+        
+        # Add URL context if not present
+        if not hasattr(record, 'url'):
+            record.url = '-'
+            
+        # Use the parent's format method to handle asctime correctly
+        return super().format(record)
+
+# Set up handlers
+console_handler = logging.StreamHandler(sys.stdout)
+file_handler = RotatingFileHandler(log_file, maxBytes=10*1024*1024, backupCount=5)
+
+# Apply formatter
+formatter = ContextualFormatter()
+console_handler.setFormatter(formatter)
+file_handler.setFormatter(formatter)
+
+# Configure the logger
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# Remove any existing handlers and add our configured ones
+for handler in logger.handlers:
+    logger.removeHandler(handler)
+logger.addHandler(console_handler)
+logger.addHandler(file_handler)
+
+# Add log file location to startup message
+logger.info(f"Firecrawl logging initialized. Log file: {log_file}")
 
 class FirecrawlClient:
     """
@@ -211,27 +256,31 @@ class FirecrawlClient:
             # Perform the scrape using current Firecrawl SDK format
             start_time = datetime.now()
             
-            # Use direct keyword arguments per current Firecrawl SDK specification
+            # Use current Firecrawl SDK specification (v1 API)
             scrape_kwargs = {
                 'url': url,
                 'formats': formats,
-                'wait_after_load': wait_for_js * 1000,  # Convert to milliseconds
                 'timeout': self.config.get('api', {}).get('timeout', 30) * 1000
             }
             
-            # Add metadata extraction if requested
+            # Add wait time using correct parameter name for current API
+            if wait_for_js > 0:
+                scrape_kwargs['wait'] = wait_for_js * 1000  # Convert to milliseconds
+            
+            # Add metadata extraction if requested (simplified for compatibility)
             if include_metadata:
-                scrape_kwargs['extract'] = {
-                    'schema': {
-                        'type': 'object',
-                        'properties': {
-                            'title': {'type': 'string'},
-                            'description': {'type': 'string'},
-                            'keywords': {'type': 'array', 'items': {'type': 'string'}},
-                            'author': {'type': 'string'},
-                            'published_date': {'type': 'string'}
-                        }
-                    }
+                scrape_kwargs['includeTags'] = ['title', 'meta', 'links']
+                
+            # Add required options for extract format if needed
+            if 'extract' in formats:
+                scrape_kwargs['extractOptions'] = {
+                    'selectors': ['main', 'article', '.codelab-step', '#codelab-steps']
+                }
+                
+            # Add required options for json format if needed
+            if 'json' in formats:
+                scrape_kwargs['jsonOptions'] = {
+                    'selector': 'body'
                 }
             
             result = self.app.scrape_url(**scrape_kwargs)
@@ -346,7 +395,466 @@ class FirecrawlClient:
             }
             
             logger.error(f"Failed to crawl {url}: {e}")
-            return error_result
+        return error_result
+    
+    def scrape_codelabs_tutorial(self, 
+                                base_url: str, 
+                                max_pages: int = 20,
+                                formats: Optional[List[str]] = None) -> Dict[str, Any]:
+        """
+        Scrape a complete Google Codelabs tutorial with hash-based pagination.
+        
+        Google Codelabs use hash-based navigation (e.g., #0, #1, #2, etc.)
+        This function automatically discovers and scrapes all pages in the tutorial.
+        
+        Args:
+            base_url: Base Codelabs URL (e.g., 'https://codelabs.developers.google.com/tutorial-name/instructions')
+            max_pages: Maximum number of pages to attempt (default: 20)
+            formats: Output formats ['markdown', 'html', 'rawHtml']
+            
+        Returns:
+            Dict containing all scraped pages and comprehensive metadata
+        """
+        if not formats:
+            formats = self.config.get('scraping', {}).get('formats', ['markdown'])
+        
+        # Remove any existing hash from the base URL
+        clean_base_url = base_url.split('#')[0]
+        
+        logger.info(f"Starting Google Codelabs tutorial scrape: {clean_base_url}")
+        logger.info(f"Will attempt to scrape up to {max_pages} pages with hash-based pagination")
+        
+        start_time = datetime.now()
+        results = {
+            'base_url': clean_base_url,
+            'status': 'in_progress',
+            'scrape_started_at': start_time.isoformat(),
+            'pages_scraped': [],
+            'pages_failed': [],
+            'total_pages_found': 0,
+            'formats_requested': formats,
+            'errors': []
+        }
+        
+        # Start with page 0 (sometimes Codelabs start with #0, sometimes with no hash)
+        page_urls_to_try = [clean_base_url]  # First try without hash
+        for i in range(max_pages):
+            page_urls_to_try.append(f"{clean_base_url}#{i}")
+        
+        successful_scrapes = 0
+        consecutive_failures = 0
+        max_consecutive_failures = 3  # Stop after 3 consecutive failures
+        
+        for page_num, page_url in enumerate(page_urls_to_try):
+            logger.info(f"Scraping Codelabs page {page_num}: {page_url}")
+            
+            try:
+                # For Google Codelabs SPA, we need to use actions to navigate
+                # Try the enhanced approach first, then fall back to direct URL
+                page_result = self._scrape_codelabs_page_with_actions(
+                    base_url=clean_base_url,
+                    page_number=page_num if page_num > 0 else None,
+                    formats=formats
+                )
+                
+                if page_result.get('status') == 'success':
+                    # Check if we got meaningful content (not just navigation)
+                    content = page_result.get('content', {})
+                    markdown_content = content.get('markdown', '')
+                    
+                    # Skip if content is too short (likely just navigation)
+                    if len(markdown_content.strip()) < 100:
+                        logger.warning(f"Page {page_num} has minimal content ({len(markdown_content)} chars), skipping")
+                        consecutive_failures += 1
+                    else:
+                        logger.info(f"Successfully scraped page {page_num}: {len(markdown_content)} characters")
+                        
+                        # Add page metadata
+                        page_result['page_number'] = page_num
+                        page_result['page_url'] = page_url
+                        page_result['content_length'] = len(markdown_content)
+                        
+                        results['pages_scraped'].append(page_result)
+                        successful_scrapes += 1
+                        consecutive_failures = 0
+                        
+                else:
+                    logger.warning(f"Failed to scrape page {page_num}: {page_result.get('error_message', 'Unknown error')}")
+                    results['pages_failed'].append({
+                        'page_number': page_num,
+                        'page_url': page_url,
+                        'error': page_result.get('error_message', 'Unknown error')
+                    })
+                    consecutive_failures += 1
+                    
+            except Exception as e:
+                logger.error(f"Exception scraping page {page_num} ({page_url}): {str(e)}")
+                results['pages_failed'].append({
+                    'page_number': page_num,
+                    'page_url': page_url,
+                    'error': str(e)
+                })
+                consecutive_failures += 1
+            
+            # Stop if we've had too many consecutive failures
+            if consecutive_failures >= max_consecutive_failures:
+                logger.info(f"Stopping after {consecutive_failures} consecutive failures")
+                break
+        
+        # Finalize results
+        end_time = datetime.now()
+        results.update({
+            'status': 'completed',
+            'scrape_completed_at': end_time.isoformat(),
+            'total_processing_time_seconds': (end_time - start_time).total_seconds(),
+            'total_pages_found': successful_scrapes,
+            'pages_attempted': len([url for url in page_urls_to_try if consecutive_failures < max_consecutive_failures]),
+            'success_rate': (successful_scrapes / len(results['pages_scraped'] + results['pages_failed'])) * 100 if (results['pages_scraped'] or results['pages_failed']) else 0
+        })
+        
+        logger.info(f"Google Codelabs scraping completed: {successful_scrapes} pages scraped successfully")
+        logger.info(f"Total processing time: {results['total_processing_time_seconds']:.2f} seconds")
+        
+        return results
+    
+    def _scrape_codelabs_page_with_actions(self, 
+                                           base_url: str, 
+                                           page_number: Optional[int] = None,
+                                           formats: Optional[List[str]] = None) -> Dict[str, Any]:
+        """
+        Scrape a Google Codelabs page using actions to handle SPA navigation.
+        
+        Args:
+            base_url: Clean base URL without hash
+            page_number: Page number to navigate to (None for first page)
+            formats: Output formats to request
+            
+        Returns:
+            Dict containing scrape results
+        """
+        if not formats:
+            formats = ['markdown']
+        
+        # Construct the target URL
+        target_url = f"{base_url}#{page_number}" if page_number is not None else base_url
+        
+        try:
+            # First, try with actions to simulate navigation
+            scrape_kwargs = {
+                'url': base_url,  # Start from base URL
+                'formats': formats,
+                'wait': 3000,  # Wait for initial load
+                'includeTags': ['title', 'meta', 'h1', 'h2', 'h3'],  # Updated metadata approach
+            }
+            
+            # Add required options for extract format if needed
+            if 'extract' in formats:
+                scrape_kwargs['extractOptions'] = {
+                    'selectors': ['main', 'article', '.codelab-step', '#codelab-steps']
+                }
+                
+            # Add required options for json format if needed
+            if 'json' in formats:
+                scrape_kwargs['jsonOptions'] = {
+                    'selector': 'body'
+                }
+            
+            # Add navigation action if we need to go to a specific page
+            if page_number is not None:
+                # Use actions to navigate to the specific page - fixed format
+                scrape_kwargs['actions'] = [
+                    {'type': 'wait', 'milliseconds': 2000},  # Wait for page to load
+                    {'type': 'click', 'selector': f'[href="#{page_number}"], [data-step="{page_number}"], .step-{page_number}, button:contains("Next")'},  # Try common selectors
+                    {'type': 'wait', 'milliseconds': 3000},  # Wait for navigation
+                ]
+            
+            logger.info(f"Attempting SPA-aware scraping for page {page_number or 'main'} of {base_url}")
+            
+            # Execute the scrape with actions
+            start_time = datetime.now()
+            result = self.app.scrape_url(**scrape_kwargs)
+            end_time = datetime.now()
+            
+            # Handle different response formats safely
+            content = {}
+            
+            # Try to extract content, handling different response structures
+            try:
+                # Check if result is a dict with 'data' key
+                if isinstance(result, dict) and 'data' in result:
+                    content_data = result['data']
+                    
+                    # Extract content in the requested formats
+                    for format_type in formats:
+                        if format_type in content_data:
+                            content[format_type] = content_data[format_type]
+                
+                # Alternative format: direct attributes
+                elif hasattr(result, 'data'):
+                    content_data = result.data
+                    
+                    # Try to extract content from attributes
+                    for format_type in formats:
+                        if hasattr(content_data, format_type):
+                            content[format_type] = getattr(content_data, format_type)
+            
+                # Log the successful extraction
+                if any(content.values()):
+                    logger.info(f"Successfully extracted content using SPA actions: {sum(len(str(c)) for c in content.values())} total chars")
+            except Exception as extract_err:
+                logger.warning(f"Error extracting content from response: {extract_err}")
+                
+                processed_result = {
+                    'url': target_url,
+                    'status': 'success',
+                    'scraped_at': start_time.isoformat(),
+                    'processing_time_seconds': (end_time - start_time).total_seconds(),
+                    'content': content,
+                    'metadata': content_data.get('metadata', {}),
+                    'method': 'spa_actions'
+                }
+                
+                return processed_result
+            else:
+                # Fallback to direct URL scraping if actions don't work
+                logger.warning(f"SPA actions failed for page {page_number}, falling back to direct URL scraping")
+                return self._scrape_codelabs_fallback(target_url, formats)
+                
+        except Exception as e:
+            logger.warning(f"SPA navigation failed for page {page_number}: {str(e)}, trying fallback")
+            # Fallback to direct URL scraping
+            return self._scrape_codelabs_fallback(target_url, formats)
+            
+        # Execute the scrape
+        result = self.app.scrape_url(**scrape_kwargs)
+            
+        # Handle different response formats safely
+        content = {}
+        extracted_html = None
+            
+        try:
+            # Format 1: Dictionary with data key
+            if isinstance(result, dict):
+                if 'data' in result:
+                    content_data = result['data']
+                        
+                    # Extract content in the requested formats
+                    for format_type in formats:
+                        if format_type in content_data:
+                            content[format_type] = content_data[format_type]
+                        
+                    # Try to get extraction data if available
+                    if 'extract' in content_data:
+                        extracted_content = content_data['extract']
+                        if isinstance(extracted_content, list) and len(extracted_content) > 0:
+                            first_extract = extracted_content[0]
+                            if isinstance(first_extract, dict) and 'html' in first_extract:
+                                html_content = first_extract['html']
+                                if len(html_content) > 100:
+                                    # Use extracted content if substantial
+                                    logger.info(f"Using extracted content ({len(html_content)} chars)")
+                                    extracted_html = html_content
+                
+            # Format 2: Object with attributes
+            elif hasattr(result, 'data'):
+                data = result.data
+                    
+                # Get formats from attributes
+                for format_type in formats:
+                    if hasattr(data, format_type):
+                        content[format_type] = getattr(data, format_type)
+                    
+                # Try to get extract data if available
+                if hasattr(data, 'extract'):
+                    extracted_content = data.extract
+                    if isinstance(extracted_content, list) and len(extracted_content) > 0:
+                        first_extract = extracted_content[0]
+                        if hasattr(first_extract, 'html'):
+                            html_content = first_extract.html
+                            if len(html_content) > 100:
+                                logger.info(f"Using extracted content from attributes ({len(html_content)} chars)")
+                                extracted_html = html_content
+                
+            # Convert HTML to markdown if we have extracted HTML content
+            if extracted_html and 'markdown' in formats:
+                try:
+                    from bs4 import BeautifulSoup
+                    from markdownify import markdownify
+                        
+                    soup = BeautifulSoup(extracted_html, 'html.parser')
+                    markdown_content = markdownify(str(soup))
+                    content['html'] = extracted_html
+                    content['markdown'] = markdown_content
+                    logger.info(f"Generated markdown from extracted HTML: {len(markdown_content)} chars")
+                except Exception as e:
+                    logger.warning(f"Failed to convert HTML to Markdown: {e}")
+                
+            # Log success
+            if any(content.values()):
+                logger.info(f"Successfully extracted content: {sum(len(str(c)) for c in content.values())} total chars")
+                    
+        except Exception as e:
+            logger.warning(f"Error processing scrape result: {e}")
+            
+        # Return the result with whatever content we managed to extract
+        end_time = datetime.now()
+        return {
+            'url': target_url,
+            'status': 'success' if any(content.values()) else 'error',
+            'scraped_at': start_time.isoformat(),
+            'processing_time_seconds': (end_time - start_time).total_seconds(),
+            'content': content,
+            'content_length': len(content.get('markdown', '')),
+            'method': 'spa_actions'
+        }
+    
+    def _scrape_codelabs_fallback(self, url: str, formats: List[str]) -> Dict[str, Any]:
+        """
+        Fallback method for Codelabs scraping using direct URL approach.
+        """
+        start_time = datetime.now()
+        logger.info(f"Using fallback direct scraping for {url}")
+        
+        # Special case for Google Codelabs - use direct HTML extraction
+        if 'codelabs.developers.google.com' in url:
+            try:
+                logger.info(f"Using direct HTML extraction for Google Codelabs: {url}")
+                import requests
+                from bs4 import BeautifulSoup
+                from markdownify import markdownify
+                
+                # Fetch the HTML content directly
+                response = requests.get(url, timeout=15)
+                if response.status_code == 200:
+                    soup = BeautifulSoup(response.text, 'html.parser')
+                    
+                    # Extract title
+                    title = soup.title.string if soup.title else ''
+                    
+                    # Try to find the main content container
+                    content_selectors = [
+                        '#codelab-steps', '.codelab-step', '.instructions', 
+                        'main', 'article', '.step-content'
+                    ]
+                    content_html = ''
+                    
+                    for selector in content_selectors:
+                        elements = soup.select(selector)
+                        if elements:
+                            logger.info(f"Found {len(elements)} content elements with selector '{selector}'")
+                            # Use the first significant content element found
+                            element_html = str(elements[0])
+                            if len(element_html) > 500:  # Must be substantial content
+                                content_html = element_html
+                                logger.info(f"Using content from selector '{selector}': {len(content_html)} chars")
+                                break
+                    
+                    # If we found content, convert to markdown and HTML
+                    content = {}
+                    if content_html:
+                        content['html'] = content_html
+                        if 'markdown' in formats:
+                            markdown_content = markdownify(content_html)
+                            content['markdown'] = markdown_content
+                            logger.info(f"Generated markdown: {len(markdown_content)} chars")
+                    
+                    end_time = datetime.now()
+                    return {
+                        'url': url,
+                        'status': 'success' if content else 'error',
+                        'scraped_at': start_time.isoformat(),
+                        'processing_time_seconds': (end_time - start_time).total_seconds(),
+                        'content': content,
+                        'content_length': len(content.get('markdown', '')),
+                        'title': title,
+                        'method': 'direct_html_extraction'
+                    }
+                else:
+                    logger.warning(f"Failed to fetch URL, status code: {response.status_code}")
+            except Exception as e:
+                logger.warning(f"Error during direct HTML extraction: {str(e)}")
+                # Continue to try the API-based approach as fallback
+        
+        # Regular fallback using Firecrawl API
+        try:
+            # Use compatible API parameters
+            scrape_kwargs = {
+                'url': url,
+                'formats': formats,
+                'wait': 8000,  # 8 seconds in milliseconds
+                'includeTags': ['title', 'meta', 'h1', 'h2', 'h3']
+            }
+            
+            # Add required options for extract format if needed
+            if 'extract' in formats:
+                scrape_kwargs['extractOptions'] = {
+                    'selectors': ['main', 'article', '.codelab-step', '#codelab-steps']
+                }
+                
+            # Add required options for json format if needed
+            if 'json' in formats:
+                scrape_kwargs['jsonOptions'] = {
+                    'selector': 'body'
+                }
+            
+            # Execute the scrape
+            api_start_time = datetime.now()
+            result = self.app.scrape_url(**scrape_kwargs)
+            api_end_time = datetime.now()
+            
+            # Handle different response formats safely
+            content = {}
+            extracted_html = None
+            
+            try:
+                # Format 1: Dictionary with data key
+                if isinstance(result, dict):
+                    if 'data' in result:
+                        content_data = result['data']
+                        
+                        # Extract content in the requested formats
+                        for format_type in formats:
+                            if format_type in content_data:
+                                content[format_type] = content_data[format_type]
+                
+                # Format 2: Object with attributes
+                elif hasattr(result, 'data'):
+                    data = result.data
+                    
+                    # Get formats from attributes
+                    for format_type in formats:
+                        if hasattr(data, format_type):
+                            content[format_type] = getattr(data, format_type)
+                
+                # Log success
+                if any(content.values()):
+                    logger.info(f"Successfully extracted content via API: {sum(len(str(c)) for c in content.values())} total chars")
+                    
+            except Exception as e:
+                logger.warning(f"Error processing API scrape result: {e}")
+            
+            # Return the result with whatever content we managed to extract
+            end_time = datetime.now()
+            return {
+                'url': url,
+                'status': 'success' if any(content.values()) else 'error',
+                'scraped_at': start_time.isoformat(),
+                'processing_time_seconds': (end_time - start_time).total_seconds(),
+                'content': content,
+                'content_length': len(content.get('markdown', '')),
+                'method': 'firecrawl_api'
+            }
+            
+        except Exception as e:
+            end_time = datetime.now()
+            return {
+                'url': url,
+                'status': 'error',
+                'error': str(e),
+                'scraped_at': start_time.isoformat(),
+                'processing_time_seconds': (end_time - start_time).total_seconds(),
+                'method': 'fallback_failed'
+            }
     
     def _generate_content_hash(self, content: Any) -> str:
         """Generate a hash for content to detect duplicates."""
